@@ -1,0 +1,75 @@
+import numpy as np
+from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, GlobalAveragePooling2D, Flatten, BatchNormalization, Input, GlobalAveragePooling2D, Reshape
+from keras.callbacks import ModelCheckpoint
+from keras.models import Sequential, Model
+from sklearn.preprocessing import LabelEncoder
+from keras.utils import to_categorical
+from datetime import datetime
+from sklearn.utils import shuffle
+from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
+import complexnn
+import os
+from sklearn.model_selection import train_test_split
+
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]= "1"
+os.environ['TF_CPP_MIN_LOG_LEVEL'] ='2'
+
+#train = np.load('spectrogram(100,200)-(0,10)_tr.npz')
+#test = np.load('spectrogram(0,100)-(0,10)_te.npz')
+
+train = np.load('complex/complex(0,100)-(0,10)_tr.npz')
+test = np.load('complex/complex(0,100)-(0,10)_te.npz')
+
+
+le = LabelEncoder()
+
+# define train data & test data
+train_X = train['data']
+train_Y = to_categorical(le.fit_transform(train['label']))
+test_X = test['data']
+test_Y = to_categorical(le.fit_transform(test['label']))
+train_X, train_Y = shuffle(train_X, train_Y)
+
+num_rows = train_X.shape[1]
+num_columns = train_X.shape[2]
+num_channels = train_X.shape[3]
+num_labels = 3
+rank =2  # complex part
+
+def CAE():
+    inputs = Input(shape=(num_rows,num_columns,num_channels))
+    layer1 = complexnn.conv.ComplexConv2D(16, kernel_size=3, padding='SAME', activation='relu')(inputs)
+    layer3 = MaxPooling2D((2, 2), padding='same')(layer1)
+
+    layer4 = complexnn.conv.ComplexConv2D(32, kernel_size=3,padding='SAME', activation='relu')(layer3)
+    layer5 = MaxPooling2D((2, 2), padding='same')(layer4)
+    layer6 = Dropout(0.3)(layer5)
+
+    layer7 = complexnn.conv.ComplexConv2D(64, kernel_size=3, padding='SAME',activation='relu')(layer6)
+    layer8 = MaxPooling2D((2, 2), padding='same')(layer7)
+    layer9 = Dropout(0.3)(layer8)
+
+    layer10 = complexnn.conv.ComplexConv2D(128, kernel_size=3, padding='SAME',activation='relu')(layer9)
+    layer11 = MaxPooling2D((2, 2), padding='same')(layer10)
+
+    layer12 = GlobalAveragePooling2D()(layer11)
+    layer13 = complexnn.dense.ComplexDense(100, activation='relu')(layer12)
+    output = Dense(num_labels, activation='softmax')(layer13)
+    model = Model(inputs=inputs, outputs=output)
+    return model
+
+if __name__=='__main__':
+    model = CAE()
+    start = datetime.now()
+    model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer='adam')
+    print(model.summary())
+    checkpoint = ModelCheckpoint('best_model.hdf5', monitor='val_accuracy',verbose=1, save_best_only=True,mode='auto', period=1)
+    train = model.fit(x=train_X, y=train_Y, batch_size=32, epochs=200, validation_data=(test_X,test_Y),callbacks=[checkpoint],verbose=1,shuffle=True)
+    duration = datetime.now()-start
+    print('training compeleted time:', duration)
+
+    pred_Y = model.predict(test_X)
+    matrix = confusion_matrix(test_Y.argmax(axis=1),pred_Y.argmax(axis=1))
+    print(matrix)
