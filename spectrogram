@@ -1,0 +1,61 @@
+import numpy as np
+from scipy import signal
+import random
+import librosa
+import numba
+from scipy.linalg import hankel
+from numpy.linalg import svd
+from sklearn.model_selection import train_test_split
+train1 = np.load('../database/(0,100)-(0,10)_1_tr.npz')
+train2 = np.load('../database/(0,100)-(1,9)_1_tr.npz')
+train3 = np.load('../database/(0,100)-(2,8)_1_tr.npz')
+train4 = np.load('../database/(0,100)-(3,7)_1_tr.npz')
+
+test= np.load('../database/(0,100)-(0,10)_1_te.npz')
+
+
+# define train data & test data
+train_X = np.concatenate([train1['data'],train2['data'],train3['data'],train4['data']])
+train_Y = np.concatenate([train1['label'],train2['label'],train3['label'],train4['label']])
+
+
+test_X = test['data']
+test_Y= test['label']
+
+spectrogram_tr=[]
+spectrogram_te=[]
+
+
+
+for i in range(len(train_X)):
+    data_tr_1 = train_X[i, :, :, 0]    #3 chanel of waveform
+    data_tr_2 = train_X[i, :, :, 1]
+    data_tr_3 = train_X[i, :, :, 2]
+    #change spectogram
+    fe1, te1, spectogram_tr_1 = signal.spectrogram(data_tr_1, fs=100, nperseg=50, noverlap=25, nfft=256, scaling='density', mode='magnitude')
+    fe2, te2, spectogram_tr_2 = signal.spectrogram(data_tr_2, fs=100, nperseg=50, noverlap=25, nfft=256, scaling='density', mode='magnitude')
+    fe3, te3, spectogram_tr_3 = signal.spectrogram(data_tr_3, fs=100, nperseg=50, noverlap=25, nfft=256, scaling='density', mode='magnitude')
+    spectrogram = np.transpose(np.concatenate([spectogram_tr_1,spectogram_tr_2,spectogram_tr_3]),(1, 2, 0))
+    spectrogram_tr.append(spectrogram)
+    print(i)
+spectrogram_tr=np.array(spectrogram_tr,dtype=float)
+label_tr=np.array(train_Y,dtype=int)
+np.savez('../Spectrogram/spectrogram/spectrogram(0,100)-4_tr', data=spectrogram_tr, label=label_tr)
+
+for i in range(len(test_X)):
+    data_te_1 = test_X[i, :, :, 0]    #3 chanel of waveform
+    data_te_2 = test_X[i, :, :, 1]
+    data_te_3 = test_X[i, :, :, 2]
+    fe1, te1, spectogram_te_1 = signal.spectrogram(data_te_1, fs=100, nperseg=50, noverlap=25, nfft=256, scaling='density', mode='magnitude')
+    fe2, te2, spectogram_te_2 = signal.spectrogram(data_te_2, fs=100, nperseg=50, noverlap=25, nfft=256, scaling='density', mode='magnitude')
+    fe3, te3, spectogram_te_3 = signal.spectrogram(data_te_3, fs=100, nperseg=50, noverlap=25, nfft=256, scaling='density', mode='magnitude')
+    spectrogram = np.transpose(np.concatenate([spectogram_te_1,spectogram_te_2,spectogram_te_3]),(1, 2, 0))
+    spectrogram_te.append(spectrogram)
+    print(i)
+spectrogram_te=np.array(spectrogram_te,dtype=float)
+label_te=np.array(test_Y,dtype=int)
+np.savez('../Spectrogram/spectrogram/spectrogram(0,100)-(0,10)_1_te', data=spectrogram_te, label=label_te)
+
+print('complete')
+
+
