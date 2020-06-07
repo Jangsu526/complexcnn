@@ -1,0 +1,176 @@
+import h5py
+import numpy as np
+import pandas as pd
+import random
+from datetime import datetime
+from sklearn.model_selection import train_test_split
+
+file_name = "../waveforms_11_13_19.hdf5"
+csv_file = "../metadata_11_13_19.csv"
+
+# reading the csv file into a dataframe:
+df = pd.read_csv(csv_file)
+print('total events in csv file: {%f}' % (len(df)))
+
+refer_t1 = datetime.strptime('1/1/09', '%m/%d/%y')
+refer_t2 = datetime.strptime('1/1/11', '%m/%d/%y')
+refer_t3 = datetime.strptime('1/1/13', '%m/%d/%y')
+refer_t4 = datetime.strptime('1/1/15', '%m/%d/%y')
+refer_t5 = datetime.strptime('1/1/17', '%m/%d/%y')
+
+df_noi = df[(df.trace_category == 'noise') & (df.receiver_type == 'HH')]
+#df_noi = df[(df.trace_category == 'noise') & (df.receiver_type == 'HH')&(pd.to_datetime(df.source_origin_time) > refer_t2)&(pd.to_datetime(df.source_origin_time) < refer_t4)]
+#df_noi = df[(df.trace_category == 'noise') & (df.receiver_type == 'HH')&(pd.to_datetime(df.source_origin_time) > refer_t4)]
+
+#df_mi_tr = df[(df.trace_category == 'earthquake_local') & (df.receiver_type == 'HH') & (df.source_distance_km >100) & (df.source_distance_km <200) & (df.source_magnitude < 3)&(pd.to_datetime(df.source_origin_time) < refer_t1) ]
+#df_ma_tr = df[(df.trace_category == 'earthquake_local') & (df.receiver_type == 'HH') & (df.source_distance_km >100) & (df.source_distance_km <200) & (df.source_magnitude >= 3)&(pd.to_datetime(df.source_origin_time) < refer_t1)]
+#df_mi_te = df[(df.trace_category == 'earthquake_local') & (df.receiver_type == 'HH') & (df.source_distance_km >100) & (df.source_distance_km <200) & (df.source_magnitude < 3)&(pd.to_datetime(df.source_origin_time) > refer_t1) &(pd.to_datetime(df.source_origin_time) < refer_t2)]
+#df_ma_te = df[(df.trace_category == 'earthquake_local') & (df.receiver_type == 'HH') & (df.source_distance_km >100) & (df.source_distance_km <200) & (df.source_magnitude >= 3)&(pd.to_datetime(df.source_origin_time) > refer_t1)&(pd.to_datetime(df.source_origin_time) < refer_t2)]
+#df_mi_tr = df[(df.trace_category == 'earthquake_local') & (df.receiver_type == 'HH') & (df.source_distance_km <100) & (df.source_magnitude < 3)&(pd.to_datetime(df.source_origin_time) > refer_t2)&(pd.to_datetime(df.source_origin_time) < refer_t3)]
+#df_ma_tr = df[(df.trace_category == 'earthquake_local') & (df.receiver_type == 'HH') & (df.source_distance_km <100) & (df.source_magnitude >= 3)&(pd.to_datetime(df.source_origin_time) > refer_t2)&(pd.to_datetime(df.source_origin_time) < refer_t3)]
+#df_mi_te = df[(df.trace_category == 'earthquake_local') & (df.receiver_type == 'HH') & (df.source_distance_km <100) & (df.source_magnitude < 3)&(pd.to_datetime(df.source_origin_time) > refer_t3)&(pd.to_datetime(df.source_origin_time) < refer_t4)]
+#df_ma_te = df[(df.trace_category == 'earthquake_local') & (df.receiver_type == 'HH') & (df.source_distance_km <100) & (df.source_magnitude >= 3)&(pd.to_datetime(df.source_origin_time) > refer_t3)&(pd.to_datetime(df.source_origin_time) < refer_t4)]
+df_mi_te = df[(df.trace_category == 'earthquake_local') & (df.receiver_type == 'HH') & (df.source_distance_km <200) & (df.source_magnitude < 3)&(pd.to_datetime(df.source_origin_time) > refer_t4)]
+df_ma_te = df[(df.trace_category == 'earthquake_local') & (df.receiver_type == 'HH') & (df.source_distance_km <200) & (df.source_magnitude >= 3)&(pd.to_datetime(df.source_origin_time) > refer_t4)]
+
+df_noi_tr, df_noi_te = train_test_split(df_noi, test_size=0.2)
+
+#print('total_train_micro( < 3.0) events selected_tr: {%f}' % (len(df_mi_tr)))
+#print('total_train_macro( >=3.0) events selected_tr: {%f}' % (len(df_ma_tr)))
+print('total_train_noise selected: {%f}' % (len(df_noi_tr)))
+print('total_test_micro( < 3.0) events selected_te: {%f}' % (len(df_mi_te)))
+print('total_test_macro( >=3.0) events selected_te: {%f}' % (len(df_ma_te)))
+print('total_test_noise selected: {%f}' % (len(df_noi_te)))
+
+# making a list of trace names for the selected data
+
+#ev_list_noi_tr = df_noi_tr['trace_name'].tolist()
+#ev_list_mi_tr = df_mi_tr['trace_name'].tolist()
+#ev_list_ma_tr = df_ma_tr['trace_name'].tolist()
+
+ev_list_noi_te = df_noi_te['trace_name'].tolist()
+ev_list_mi_te = df_mi_te['trace_name'].tolist()
+ev_list_ma_te = df_ma_te['trace_name'].tolist()
+
+dtfl = h5py.File(file_name, 'r')
+#numlist_noi_tr = range(len(ev_list_noi_tr))
+#numlist_mi_tr = range(len(ev_list_mi_tr))
+#numlist_ma_tr = range(len(ev_list_ma_tr))
+
+numlist_noi_te = range(len(ev_list_noi_te))
+numlist_mi_te = range(len(ev_list_mi_te))
+numlist_ma_te = range(len(ev_list_ma_te))
+
+
+#tr_margin_samples = [300]
+#tr_extract_sample = 700
+
+te_margin_samples = [300]
+te_extract_sample =700
+
+#s_num_noi_tr = random.sample(numlist_noi_tr, 500)
+#s_num_mi_tr = random.sample(numlist_mi_tr, 500)
+#s_num_ma_tr = random.sample(numlist_ma_tr, 500)
+
+s_num_noi_te = random.sample(numlist_noi_te,500)
+s_num_mi_te = random.sample(numlist_mi_te, 500)
+s_num_ma_te = random.sample(numlist_ma_te, 500)
+
+######################################################
+
+arr_ear_tr = []
+y_label_each_ev_tr = []
+
+'''for c in s_num_mi_tr:
+    evi = ev_list_mi_tr[c]
+    dataset = dtfl.get('earthquake/local/' + str(evi))
+    data = np.array(dataset)
+    p_picking = dataset.attrs['p_arrival_sample']
+    s_picking = dataset.attrs['s_arrival_sample']
+    for margin_sample in tr_margin_samples:
+        ext_start = np.int(p_picking - margin_sample)
+        ext_end = np.int(p_picking + tr_extract_sample)
+        if ext_start >= 0 :
+            ext_data = data[ext_start:ext_end, :]
+            ext_data_reshape = ext_data.reshape(1, 1000, 3)
+
+            arr_ear_tr.append(ext_data_reshape)
+            y_label_each_ev_tr.extend([0])
+
+
+for c in s_num_ma_tr:
+    evi = ev_list_ma_tr[c]
+    dataset = dtfl.get('earthquake/local/' + str(evi))
+    data = np.array(dataset)
+    p_picking = dataset.attrs['p_arrival_sample']
+    s_picking = dataset.attrs['s_arrival_sample']
+    for margin_sample in tr_margin_samples:
+        ext_start = np.int(p_picking - margin_sample)
+        ext_end = np.int(p_picking + tr_extract_sample)
+        if ext_start >= 0 :
+            ext_data = data[ext_start:ext_end, :]
+            ext_data_reshape = ext_data.reshape(1, 1000, 3)
+            arr_ear_tr.append(ext_data_reshape)
+            y_label_each_ev_tr.extend([1])
+
+for c in s_num_noi_tr:
+    evi = ev_list_noi_tr[c]
+    dataset = dtfl.get('non_earthquake/noise/' + str(evi))
+    data = np.array(dataset)
+    ext_data = data[1000:2000, :]
+    ext_data_reshape = ext_data.reshape(1, 1000, 3)
+    arr_ear_tr.append(ext_data_reshape)
+    y_label_each_ev_tr.extend([2])'''
+
+arr_ear_te = []
+y_label_each_ev_te = []
+
+for c in s_num_mi_te:
+    evi = ev_list_mi_te[c]
+    dataset = dtfl.get('earthquake/local/' + str(evi))
+    data = np.array(dataset)
+
+    p_picking = dataset.attrs['p_arrival_sample']
+    s_picking = dataset.attrs['s_arrival_sample']
+
+    for margin_sample in te_margin_samples:
+        ext_start = np.int(p_picking - margin_sample)
+        ext_end = np.int(p_picking + te_extract_sample)
+        if ext_start >= 0 :
+            ext_data = data[ext_start:ext_end, :]
+            ext_data_reshape = ext_data.reshape(1, 1000, 3)
+            arr_ear_te.append(ext_data_reshape)
+            y_label_each_ev_te.extend([0])
+
+for c in s_num_ma_te:
+    evi = ev_list_ma_te[c]
+    dataset = dtfl.get('earthquake/local/' + str(evi))
+    data = np.array(dataset)
+    p_picking = dataset.attrs['p_arrival_sample']
+    s_picking = dataset.attrs['s_arrival_sample']
+    for margin_sample in te_margin_samples:
+        ext_start = np.int(p_picking - margin_sample)
+        ext_end = np.int(p_picking + te_extract_sample)
+        if ext_start >= 0 :
+            ext_data = data[ext_start:ext_end, :]
+            ext_data_reshape = ext_data.reshape(1, 1000, 3)
+            arr_ear_te.append(ext_data_reshape)
+            y_label_each_ev_te.extend([1])
+for c in s_num_noi_te:
+    evi = ev_list_noi_te[c]
+    dataset = dtfl.get('non_earthquake/noise/' + str(evi))
+    data = np.array(dataset)
+    ext_data = data[1000:2000, :]
+    ext_data_reshape = ext_data.reshape(1, 1000, 3)
+    arr_ear_te.append(ext_data_reshape)
+    y_label_each_ev_te.extend([2])
+
+#ENZ_arr_ear_tr = np.array(arr_ear_tr, dtype=float)
+#ENZ_ylabel_each_ev_tr = np.array(y_label_each_ev_tr, dtype=int)
+
+ENZ_arr_ear_te = np.array(arr_ear_te, dtype=float)
+ENZ_ylabel_each_ev_te = np.array(y_label_each_ev_te, dtype=int)
+
+#np.savez('../database/(0,100)-(3,7)_1_tr', data=ENZ_arr_ear_tr, label=ENZ_ylabel_each_ev_tr)
+np.savez('../database/(0,100)-(3,7)_1_te', data=ENZ_arr_ear_te, label=ENZ_ylabel_each_ev_te)
+print('save done')
